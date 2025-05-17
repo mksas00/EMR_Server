@@ -46,7 +46,7 @@ public class Patient {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by")
-    private Users createdBy;
+    private User createdBy;
 
     @ColumnDefault("CURRENT_TIMESTAMP")
     @Column(name = "created_at")
