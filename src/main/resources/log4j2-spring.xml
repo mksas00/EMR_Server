@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN" monitorInterval="60">
+  <Properties>
+    <Property name="LOG_DIR">logs</Property>
+    <Property name="APP_FILE">${LOG_DIR}/application.log</Property>
+    <Property name="SEC_FILE">${LOG_DIR}/security.log</Property>
+    <Property name="PATTERN">%d{yyyy-MM-dd'T'HH:mm:ss.SSSZ} %-5p [%t] %c{1.} - %m%n</Property>
+  </Properties>
+
+  <Appenders>
+    <Console name="Console" target="SYSTEM_OUT">
+      <PatternLayout pattern="${PATTERN}"/>
+    </Console>
+
+    <RollingFile name="AppFile" fileName="${APP_FILE}" filePattern="${LOG_DIR}/application-%d{yyyy-MM-dd}-%i.log.gz" createOnDemand="true">
+      <PatternLayout pattern="${PATTERN}"/>
+      <Policies>
+        <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+        <SizeBasedTriggeringPolicy size="50 MB"/>
+      </Policies>
+      <DefaultRolloverStrategy max="30"/>
+    </RollingFile>
+
+    <RollingFile name="SecurityFile" fileName="${SEC_FILE}" filePattern="${LOG_DIR}/security-%d{yyyy-MM-dd}-%i.log.gz" createOnDemand="true">
+      <PatternLayout pattern="${PATTERN}"/>
+      <Policies>
+        <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+        <SizeBasedTriggeringPolicy size="10 MB"/>
+      </Policies>
+      <Filters>
+        <RegexFilter regex="^(LOGIN_|LOGOUT|REFRESH_|PASSWORD_).*" onMatch="ACCEPT" onMismatch="DENY"/>
+      </Filters>
+      <DefaultRolloverStrategy max="90"/>
+    </RollingFile>
+  </Appenders>
+
+  <Loggers>
+    <Logger name="org.springframework" level="WARN" additivity="false">
+      <AppenderRef ref="Console"/>
+      <AppenderRef ref="AppFile"/>
+    </Logger>
+    <Logger name="org.hibernate" level="WARN" additivity="false">
+      <AppenderRef ref="Console"/>
+      <AppenderRef ref="AppFile"/>
+    </Logger>
+    <Root level="INFO">
+      <AppenderRef ref="Console"/>
+      <AppenderRef ref="AppFile"/>
+      <AppenderRef ref="SecurityFile"/>
+    </Root>
+  </Loggers>
+</Configuration>

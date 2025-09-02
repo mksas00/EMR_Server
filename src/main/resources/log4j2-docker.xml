@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN" monitorInterval="60">
+  <Appenders>
+    <Console name="JsonConsole" target="SYSTEM_OUT">
+      <JsonLayout complete="false" compact="true" eventEol="true" stacktraceAsString="true" properties="true" locationInfo="false"/>
+    </Console>
+  </Appenders>
+  <Loggers>
+    <Root level="INFO">
+      <AppenderRef ref="JsonConsole"/>
+    </Root>
+  </Loggers>
+</Configuration>
+

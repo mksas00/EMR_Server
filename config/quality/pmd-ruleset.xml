@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ruleset name="EMR Project Rules"
+         xmlns="https://pmd.github.io/pmd-7.0.0/ruleset"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="https://pmd.github.io/pmd-7.0.0/ruleset https://pmd.github.io/pmd-7.0.0/ruleset.xsd">
+    <description>
+        Zestaw reguł PMD dla projektu EMR: dobre praktyki, bezpieczeństwo i jakość kodu.
+    </description>
+
+    <!-- Wyklucz analizę plików testowych -->
+    <exclude-pattern>.*/src/test/.*</exclude-pattern>
+
+    <!-- Kluczowe kategorie reguł dla Javy (PMD 7) -->
+    <rule ref="category/java/bestpractices.xml"/>
+    <rule ref="category/java/codestyle.xml"/>
+    <rule ref="category/java/design.xml"/>
+    <rule ref="category/java/documentation.xml"/>
+    <rule ref="category/java/errorprone.xml"/>
+    <rule ref="category/java/multithreading.xml"/>
+    <rule ref="category/java/performance.xml"/>
+    <rule ref="category/java/security.xml"/>
+
+</ruleset>
+

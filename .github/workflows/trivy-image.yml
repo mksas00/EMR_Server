@@ -1,0 +1,43 @@
+name: Trivy Image Scan
+
+on:
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  scan-image:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build image (local)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          tags: emr:${{ github.sha }}
+
+      - name: Trivy scan (image)
+        uses: aquasecurity/trivy-action@0.24.0
+        with:
+          image-ref: 'emr:${{ github.sha }}'
+          format: 'sarif'
+          output: 'trivy-image.sarif'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+
+      - name: Upload SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-image.sarif
+
