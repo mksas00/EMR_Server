@@ -24,13 +24,13 @@ jobs:
           java-version: '21'
           cache: 'maven'
 
-      - name: Clean and compile
-        run: mvn clean compile -B
-
       - name: Run tests
         env:
           SPRING_PROFILES_ACTIVE: test
-        run: mvn test -B
+        run: mvn clean test -B
+
+      - name: Build application
+        run: mvn compile -B
 
       - name: Package application
         run: mvn package -B -DskipTests
