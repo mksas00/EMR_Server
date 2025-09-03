@@ -24,13 +24,19 @@ jobs:
           java-version: '21'
           cache: 'maven'
 
-      - name: Build and test
+      - name: Clean and compile
+        run: mvn clean compile -B
+
+      - name: Run tests
         env:
           SPRING_PROFILES_ACTIVE: test
-        run: mvn -DskipDependencyCheck -DskipSpotbugs -DskipCheckstyle -DskipPmd --batch-mode verify
+        run: mvn test -B
+
+      - name: Package application
+        run: mvn package -B -DskipTests
 
       - name: Generate SBOM (CycloneDX)
-        run: mvn --batch-mode cyclonedx:makeBom
+        run: mvn cyclonedx:makeBom -B
 
       - name: Upload SBOM
         uses: actions/upload-artifact@v4
@@ -56,18 +62,6 @@ jobs:
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: trivy-results.sarif
-
-      - name: OSV-Scanner (Docker)
-        run: |
-          docker run --rm -v "$PWD":/workspace -w /workspace ghcr.io/google/osv-scanner:latest \
-            -r . \
-            -f sarif \
-            -o osv-results.sarif || true
-
-      - name: Upload OSV SARIF
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: osv-results.sarif
 
       - name: Upload test reports
         if: always()

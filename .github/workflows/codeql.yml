@@ -31,11 +31,9 @@ jobs:
         uses: github/codeql-action/init@v3
         with:
           languages: java
-          # Disable autobuild
-          tools: manual-build
 
-      # Wyłączamy autobuild i używamy naszego własnego kroku budowania
-      - name: Build with Maven (skip tests)
+      # Manual build step to replace autobuild
+      - name: Build with Maven (skip tests and quality checks)
         env:
           SPRING_PROFILES_ACTIVE: test
         run: mvn -B -Dfindbugs.skip -Dcheckstyle.skip -Dpmd.skip=true -Dspotbugs.skip -Denforcer.skip -Dmaven.javadoc.skip -DskipTests -Dmaven.test.skip.exec -Dlicense.skip=true -Drat.skip=true -Dspotless.check.skip=true package
