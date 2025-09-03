@@ -9,8 +9,10 @@ updates:
       timezone: "Europe/Warsaw"
     open-pull-requests-limit: 10
     labels: ["dependencies", "security"]
-    assignees: []
-    reviewers: []
+    reviewers:
+      - "beqs1"
+    assignees:
+      - "beqs1"
     ignore:
       - dependency-name: "org.springframework.boot:*"
         versions: ["<3.4.5"]
@@ -23,4 +25,7 @@ updates:
       timezone: "Europe/Warsaw"
     open-pull-requests-limit: 10
     labels: ["dependencies", "ci"]
-
+    reviewers:
+      - "beqs1"
+    assignees:
+      - "beqs1"

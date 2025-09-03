@@ -25,6 +25,8 @@ jobs:
           cache: 'maven'
 
       - name: Build and test
+        env:
+          SPRING_PROFILES_ACTIVE: test
         run: mvn -DskipDependencyCheck -DskipSpotbugs -DskipCheckstyle -DskipPmd --batch-mode verify
 
       - name: Generate SBOM (CycloneDX)
@@ -55,13 +57,12 @@ jobs:
         with:
           sarif_file: trivy-results.sarif
 
-      - name: OSV-Scanner
-        uses: google/osv-scanner-action@v1
-        with:
-          scan-args: >-
-            -r .
-            -f sarif
-            -o osv-results.sarif
+      - name: OSV-Scanner (Docker)
+        run: |
+          docker run --rm -v "$PWD":/workspace -w /workspace ghcr.io/google/osv-scanner:latest \
+            -r . \
+            -f sarif \
+            -o osv-results.sarif || true
 
       - name: Upload OSV SARIF
         uses: github/codeql-action/upload-sarif@v3
