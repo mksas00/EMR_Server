@@ -66,3 +66,4 @@ public class User {
     @Column(name = "mfa_enabled")
     private Boolean mfaEnabled;
 }
+

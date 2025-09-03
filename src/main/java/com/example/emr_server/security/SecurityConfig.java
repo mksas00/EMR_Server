@@ -18,12 +18,10 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.intercept.AuthorizationFilter;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
-import com.example.emr_server.security.ratelimit.RateLimitFilter; // dodane
+import com.example.emr_server.security.ratelimit.RateLimitFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import org.springframework.security.web.header.writers.CrossOriginResourcePolicyHeaderWriter.CrossOriginResourcePolicy;
-import org.springframework.security.web.header.writers.StaticHeadersWriter;
 
 import java.util.List;
 
@@ -34,7 +32,8 @@ public class SecurityConfig {
     @Autowired
     private JwtAuthenticationFilter jwtAuthenticationFilter;
     private final UserDetailsService userDetailsService;
-    private final RateLimitFilter rateLimitFilter; // wstrzyknięcie
+    private final RateLimitFilter rateLimitFilter;
+    private final CookieSecurityFilter cookieSecurityFilter; // Added for secure cookies
 
     @Value("${app.security.cors.allowed-origins:http://localhost:3000}")
     private List<String> allowedOrigins;
@@ -70,13 +69,11 @@ public class SecurityConfig {
                 .anyRequest().authenticated()
             )
             .authenticationProvider(daoAuthProvider(userDetailsService, passwordEncoder()))
-            // Rejestracja filtra MDC tuż przed autoryzacją
+            // Security filters in correct order
+            .addFilterBefore(cookieSecurityFilter, UsernamePasswordAuthenticationFilter.class)
             .addFilterBefore(loggingMdcFilter(), AuthorizationFilter.class)
-            // Odrzucaj duże JSON-y możliwie wcześnie
             .addFilterBefore(requestSizeLimitFilter, AuthorizationFilter.class)
-            // Rate limiting (również przed autoryzacją)
             .addFilterBefore(rateLimitFilter, AuthorizationFilter.class)
-            // JWT autoryzacja
             .addFilterBefore(jwtAuthenticationFilter, AuthorizationFilter.class)
             .headers(h -> {
                 // Content Security Policy - ochrona przed XSS
@@ -94,7 +91,7 @@ public class SecurityConfig {
                 ));
 
                 // Podstawowe nagłówki bezpieczeństwa
-                h.frameOptions(f -> f.deny()); // Ochrona przed clickjacking
+                h.frameOptions(frameOptions -> frameOptions.deny()); // Updated for Spring Security 6.1+
                 h.contentTypeOptions(co -> {}); // Ochrona przed MIME sniffing
                 h.cacheControl(cc -> {}); // Kontrola cache
                 h.referrerPolicy(r -> r.policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN));
