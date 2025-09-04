@@ -47,7 +47,7 @@ jobs:
           echo "App didn't become healthy in time"; docker compose logs --no-color | tail -n 200; exit 1
 
       - name: ZAP Baseline Scan
-        uses: zaproxy/action-baseline@v0.11.0
+        uses: zaproxy/action-baseline@v0.14.0
         with:
           target: 'http://localhost:8080'
           rules_file_name: '.zap/rules.tsv'
