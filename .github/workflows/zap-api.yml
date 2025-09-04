@@ -41,7 +41,7 @@ jobs:
           echo "App didn't become healthy in time"; docker compose logs --no-color | tail -n 200; exit 1
 
       - name: ZAP API Scan (OpenAPI)
-        uses: zaproxy/action-api-scan@v0.8.0
+        uses: zaproxy/action-api-scan@v0.9.0
         with:
           target: 'http://localhost:8080/v3/api-docs'
           format: openapi
