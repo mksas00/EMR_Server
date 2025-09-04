@@ -48,7 +48,7 @@
         <!-- Nowe: klucz NVD może być ustawiony jako -Dnvd.api.key; domyślnie z ENV -->
         <nvd.api.key>${env.NVD_API_KEY}</nvd.api.key>
         <!-- CycloneDX plugin version for SBOM generation -->
-        <cyclonedx.plugin.version>2.8.0</cyclonedx.plugin.version>
+        <cyclonedx.plugin.version>2.9.1</cyclonedx.plugin.version>
     </properties>
     <dependencies>
         <!-- Logowanie: Log4j2 zamiast Logback -->
