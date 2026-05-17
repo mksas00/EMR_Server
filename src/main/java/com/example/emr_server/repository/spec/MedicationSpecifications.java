@@ -10,14 +10,17 @@ public final class MedicationSpecifications {
         Specification<Medication> spec = Specification.where(null);
         if (q != null && !q.isBlank()) {
             String like = "%" + q.trim().toLowerCase() + "%";
+            String atcPrefix = q.trim().toUpperCase() + "%";
             spec = spec.and((root, cq, cb) -> cb.or(
                     cb.like(cb.lower(root.get("name")), like),
-                    cb.like(cb.lower(root.get("commonName")), like)
+                    cb.like(cb.lower(root.get("commonName")), like),
+                    cb.like(cb.upper(root.get("atcCode")), atcPrefix)
             ));
         }
         if (atc != null && !atc.isBlank()) {
-            String atcTrim = atc.trim();
-            spec = spec.and((root, cq, cb) -> cb.equal(root.get("atcCode"), atcTrim));
+            String atcLike = atc.trim().toUpperCase() + "%";
+            spec = spec.and((root, cq, cb) ->
+                    cb.like(cb.upper(root.get("atcCode")), atcLike));
         }
         return spec;
     }

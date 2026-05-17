@@ -157,6 +157,7 @@ public interface LabResultService {
      */
     Page<LabResultDto> searchVisible(
             Optional<UUID> patientId,
+            Optional<String> pesel,
             Optional<UUID> orderedById,
             Optional<String> status,
             Optional<LocalDate> start,

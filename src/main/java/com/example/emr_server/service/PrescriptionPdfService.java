@@ -220,7 +220,7 @@ public class PrescriptionPdfService {
                 // draw text lines (zwiększony padding pionowy)
                 for (int li = 0; li < lines; li++) {
                     float lx = x + 6;
-                    float ly = y + rowHeight + 4 - li * leading;
+                    float ly = y + rowHeight - 2 - li * leading;
                     writeLine(regular, 12, lx, ly, li < col0.size() ? col0.get(li) : "");
                     lx += widths[0];
                     writeLine(regular, 12, lx + 6, ly, li < col1.size() ? col1.get(li) : "");
@@ -289,7 +289,9 @@ public class PrescriptionPdfService {
                 r.rule();
                 r.y -= 10;
 
-                r.writeLine(r.regular, 12, r.margin, r.y, "Lekarz: " + (p.getDoctor()!=null? safe(p.getDoctor().getUsername()): "-"));
+                r.writeLine(r.regular, 12, r.margin, r.y, "Lekarz: " + (p.getDoctor() != null
+                        ? safe(p.getDoctor().getFirstName()) + " " + safe(p.getDoctor().getLastName())
+                        : "-"));
             }
             doc.save(baos);
             return baos.toByteArray();

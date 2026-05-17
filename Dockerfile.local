@@ -1,0 +1,14 @@
+# Dockerfile dla lokalnego developmentu - używa pre-built JAR z target/
+FROM eclipse-temurin:21-jre-alpine
+ENV APP_HOME=/app \
+    JAVA_OPTS=""
+WORKDIR ${APP_HOME}
+RUN addgroup -S emr && adduser -S emr -G emr
+COPY target/emr_server-0.0.1-SNAPSHOT.jar app.jar
+COPY scripts/entrypoint.sh entrypoint.sh
+RUN chmod +x entrypoint.sh && chown -R emr:emr ${APP_HOME}
+EXPOSE 8080
+USER emr
+HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=5 CMD wget -qO- http://localhost:8080/actuator/health || exit 1
+ENTRYPOINT ["/app/entrypoint.sh"]
+

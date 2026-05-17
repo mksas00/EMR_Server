@@ -13,6 +13,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -53,6 +54,7 @@ public class ChronicDiseaseController {
     }
 
     @PostMapping
+    @PreAuthorize("hasRole('DOCTOR')")
     @Operation(summary = "Utwórz chorobę przewlekłą", description = "Tworzy wpis choroby na podstawie ChronicDiseaseCreateRequest")
     public ResponseEntity<ChronicDiseaseDto> create(@Valid @RequestBody ChronicDiseaseCreateRequest req) {
         try {
@@ -71,6 +73,7 @@ public class ChronicDiseaseController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('DOCTOR')")
     @Operation(summary = "Aktualizuj chorobę przewlekłą", description = "Aktualizuje wpis choroby na podstawie ChronicDiseaseUpdateRequest")
     public ResponseEntity<ChronicDiseaseDto> update(@PathVariable UUID id, @Valid @RequestBody ChronicDiseaseUpdateRequest req) {
         try {
@@ -87,6 +90,7 @@ public class ChronicDiseaseController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('DOCTOR')")
     public ResponseEntity<Void> delete(@PathVariable UUID id) {
         try {
             boolean deleted = chronicDiseaseService.deleteForCurrent(id);

@@ -6,6 +6,7 @@ import com.example.emr_server.entity.User;
 import com.example.emr_server.repository.PatientConsentRepository;
 import com.example.emr_server.repository.PatientRepository;
 import com.example.emr_server.security.CustomUserDetails;
+import com.example.emr_server.security.SecurityIncidentService;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -19,12 +20,19 @@ import java.util.UUID;
 @Service
 public class BtgServiceImpl implements BtgService {
 
+    private static final int BTG_ABUSE_THRESHOLD = 3;
+    private static final int BTG_ABUSE_WINDOW_HOURS = 24;
+
     private final PatientRepository patientRepository;
     private final PatientConsentRepository patientConsentRepository;
+    private final SecurityIncidentService incidents;
 
-    public BtgServiceImpl(PatientRepository patientRepository, PatientConsentRepository patientConsentRepository) {
+    public BtgServiceImpl(PatientRepository patientRepository,
+                          PatientConsentRepository patientConsentRepository,
+                          SecurityIncidentService incidents) {
         this.patientRepository = patientRepository;
         this.patientConsentRepository = patientConsentRepository;
+        this.incidents = incidents;
     }
 
     @Override
@@ -54,7 +62,19 @@ public class BtgServiceImpl implements BtgService {
         consent.setReason(reason);
         consent.setExpiresAt(Instant.now().plus(minutes, ChronoUnit.MINUTES));
 
-        return patientConsentRepository.save(consent);
+        PatientConsent saved = patientConsentRepository.save(consent);
+
+        // Detekcja BTG_ABUSE: liczba grantów BTG przyznanych przez tego usera w 24h
+        Instant since = Instant.now().minus(BTG_ABUSE_WINDOW_HOURS, ChronoUnit.HOURS);
+        long btgCount = patientConsentRepository.countByGrantedToAndScopeAndGrantedAtAfter(currentUser, "btg", since);
+        if (btgCount >= BTG_ABUSE_THRESHOLD) {
+            incidents.high(SecurityIncidentService.Cat.BTG_ABUSE,
+                    String.format("Użytkownik użył Break-the-Glass %d razy w ciągu %dh (próg=%d)",
+                            btgCount, BTG_ABUSE_WINDOW_HOURS, BTG_ABUSE_THRESHOLD),
+                    currentUser);
+        }
+
+        return saved;
     }
 
     @Override

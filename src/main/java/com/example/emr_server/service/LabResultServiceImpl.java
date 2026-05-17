@@ -25,15 +25,18 @@ public class LabResultServiceImpl implements LabResultService {
     private final AuthorizationService authorizationService;
     private final UserRepository userRepository;
     private final AuditService auditService;
+    private final PatientService patientService;
 
     public LabResultServiceImpl(LabResultRepository labResultRepository,
                                 AuthorizationService authorizationService,
                                 UserRepository userRepository,
-                                AuditService auditService) {
+                                AuditService auditService,
+                                PatientService patientService) {
         this.labResultRepository = labResultRepository;
         this.authorizationService = authorizationService;
         this.userRepository = userRepository;
         this.auditService = auditService;
+        this.patientService = patientService;
     }
 
     private User current() { return SecurityUtil.getCurrentUser(userRepository).orElse(null); }
@@ -194,6 +197,7 @@ public class LabResultServiceImpl implements LabResultService {
     @Override
     public Page<LabResultDto> searchVisible(
             java.util.Optional<java.util.UUID> patientId,
+            java.util.Optional<String> pesel,
             java.util.Optional<java.util.UUID> orderedById,
             java.util.Optional<String> status,
             java.util.Optional<java.time.LocalDate> start,
@@ -202,8 +206,15 @@ public class LabResultServiceImpl implements LabResultService {
             java.util.Optional<String> resultFragment,
             Pageable pageable
     ) {
+        java.util.Optional<java.util.UUID> effectivePatientId = patientId;
+        if (pesel.isPresent() && !pesel.get().isBlank()) {
+            effectivePatientId = patientService.findPatientIdByPesel(pesel.get());
+            if (effectivePatientId.isEmpty()) {
+                return com.example.emr_server.util.PageUtils.paginate(java.util.List.of(), pageable);
+            }
+        }
         User u = current();
-        var spec = LabResultSpecifications.withFilters(patientId, orderedById, status, start, end, testName, resultFragment);
+        var spec = LabResultSpecifications.withFilters(effectivePatientId, orderedById, status, start, end, testName, resultFragment);
         var all = labResultRepository.findAll(spec);
         var visible = all.stream()
                 .filter(r -> authorizationService.canReadPatient(u, r.getPatient()))

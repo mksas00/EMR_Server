@@ -32,6 +32,19 @@ public final class SecurityUtil {
         return userRepository.findByUsernameOrEmail(name, name);
     }
 
+    /**
+     * Pobiera tylko domain User z principal-a (bez sięgania do repozytorium).
+     * Wygodne w miejscach, w których nie chcemy wstrzykiwać UserRepository.
+     */
+    public static Optional<User> getCurrentUserPrincipal() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated()) return Optional.empty();
+        if (auth.getPrincipal() instanceof CustomUserDetails cud) {
+            return Optional.ofNullable(cud.getDomainUser());
+        }
+        return Optional.empty();
+    }
+
     public static UUID getCurrentUserId() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !auth.isAuthenticated()) {

@@ -14,11 +14,12 @@ ON CONFLICT DO NOTHING;
 -- Dodatkowi użytkownicy kliniczni (stronger UUID randomness)
 INSERT INTO emr.users (id, username, email, password_hash, role, password_algo)
 VALUES
- ('91d9c6c9-a3fd-4d4d-8a0c-9a4c6c5d01d1','doctor_alfa','doctor.alfa@example.com','$2a$12$yW0y4cxr..VXNi2fL/95SO2S/bRMyCV2wAPOQgpdnH3UX0YPDhmCa','doctor','bcrypt'),
- ('b2fca7c4-8e3e-4798-8c06-1fe0dc4dd021','doctor_beta','doctor.beta@example.com','$2a$12$yW0y4cxr..VXNi2fL/95SO2S/bRMyCV2wAPOQgpdnH3UX0YPDhmCa','doctor','bcrypt'),
- ('e3b9b865-4ff9-4b70-a8c2-b1b0b911c3fd','nurse_anna','nurse.anna@example.com','$2a$12$yW0y4cxr..VXNi2fL/95SO2S/bRMyCV2wAPOQgpdnH3UX0YPDhmCa','nurse','bcrypt'),
- ('5b8e2a57-f0d4-4b86-9b56-0b6ec889a222','nurse_ola','nurse.ola@example.com','$2a$12$yW0y4cxr..VXNi2fL/95SO2S/bRMyCV2wAPOQgpdnH3UX0YPDhmCa','nurse','bcrypt'),
- ('c6a9bc3c-72d5-45b0-97d0-5a7a0a22d998','lab_marek','lab.marek@example.com','$2a$12$yW0y4cxr..VXNi2fL/95SO2S/bRMyCV2wAPOQgpdnH3UX0YPDhmCa','lab_tech','bcrypt')
+ -- Hasło dla wszystkich kont klinicznych: Admin!123
+ ('91d9c6c9-a3fd-4d4d-8a0c-9a4c6c5d01d1','doctor_alfa','doctor.alfa@example.com','$2a$12$kJVbAy7qjGSqWutZ6y/OjeigMgnbHxhjdBSPCuR6S8oX/8Pu2OPeK','doctor','bcrypt'),
+ ('b2fca7c4-8e3e-4798-8c06-1fe0dc4dd021','doctor_beta','doctor.beta@example.com','$2a$12$kJVbAy7qjGSqWutZ6y/OjeigMgnbHxhjdBSPCuR6S8oX/8Pu2OPeK','doctor','bcrypt'),
+ ('e3b9b865-4ff9-4b70-a8c2-b1b0b911c3fd','nurse_anna','nurse.anna@example.com','$2a$12$kJVbAy7qjGSqWutZ6y/OjeigMgnbHxhjdBSPCuR6S8oX/8Pu2OPeK','nurse','bcrypt'),
+ ('5b8e2a57-f0d4-4b86-9b56-0b6ec889a222','nurse_ola','nurse.ola@example.com','$2a$12$kJVbAy7qjGSqWutZ6y/OjeigMgnbHxhjdBSPCuR6S8oX/8Pu2OPeK','nurse','bcrypt'),
+ ('c6a9bc3c-72d5-45b0-97d0-5a7a0a22d998','lab_marek','lab.marek@example.com','$2a$12$kJVbAy7qjGSqWutZ6y/OjeigMgnbHxhjdBSPCuR6S8oX/8Pu2OPeK','lab_tech','bcrypt')
 ON CONFLICT DO NOTHING;
 
 -- ====== PACJENCI (Kilka statycznych “referencyjnych”) ======
@@ -103,7 +104,7 @@ BEGIN
     SELECT id INTO base_doctor FROM emr.users WHERE role='doctor' ORDER BY created_at LIMIT 1;
     IF base_doctor IS NULL THEN
         INSERT INTO emr.users(id, username, email, password_hash, role, password_algo)
-        VALUES (gen_random_uuid(), 'dev_doctor_seed', 'dev_doctor_seed@example.com', '$2a$12$yW0y4cxr..VXNi2fL/95SO2S/bRMyCV2wAPOQgpdnH3UX0YPDhmCa', 'doctor','bcrypt')
+        VALUES (gen_random_uuid(), 'dev_doctor_seed', 'dev_doctor_seed@example.com', '$2a$12$kJVbAy7qjGSqWutZ6y/OjeigMgnbHxhjdBSPCuR6S8oX/8Pu2OPeK', 'doctor','bcrypt')
         RETURNING id INTO base_doctor;
     END IF;
 

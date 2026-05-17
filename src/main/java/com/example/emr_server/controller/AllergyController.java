@@ -14,6 +14,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -52,6 +53,7 @@ public class AllergyController {
     }
 
     @PostMapping
+    @PreAuthorize("hasRole('DOCTOR')")
     @Operation(summary = "Utwórz alergię", description = "Tworzy alergię na podstawie AllergyCreateRequest")
     public ResponseEntity<AllergyDto> create(@Valid @RequestBody AllergyCreateRequest req) {
         try {
@@ -70,6 +72,7 @@ public class AllergyController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('DOCTOR')")
     @Operation(summary = "Aktualizuj alergię", description = "Aktualizuje alergię na podstawie AllergyUpdateRequest")
     public ResponseEntity<AllergyDto> update(@PathVariable UUID id, @Valid @RequestBody AllergyUpdateRequest req) {
         try {
@@ -86,6 +89,7 @@ public class AllergyController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('DOCTOR')")
     public ResponseEntity<Void> delete(@PathVariable UUID id) {
         try {
             boolean deleted = allergyService.deleteForCurrent(id);

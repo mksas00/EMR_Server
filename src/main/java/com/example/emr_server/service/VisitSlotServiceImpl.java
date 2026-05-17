@@ -12,6 +12,7 @@ import com.example.emr_server.repository.VisitSlotRepository;
 import com.example.emr_server.security.AuthorizationService;
 import com.example.emr_server.security.SecurityUtil;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.Comparator;
@@ -98,6 +99,7 @@ public class VisitSlotServiceImpl implements VisitSlotService {
     }
 
     @Override
+    @Transactional
     public Optional<VisitSlotDto> reserve(UUID slotId, UUID patientId) {
         User u = current();
         return slotRepository.findById(slotId).flatMap(s -> {
@@ -127,6 +129,7 @@ public class VisitSlotServiceImpl implements VisitSlotService {
     }
 
     @Override
+    @Transactional
     public Optional<VisitSlotDto> release(UUID slotId) {
         User u = current();
         return slotRepository.findById(slotId).map(s -> {

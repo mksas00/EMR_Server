@@ -9,6 +9,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -48,6 +49,14 @@ public class ApiExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
     }
 
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<Map<String, Object>> handleResponseStatus(ResponseStatusException ex) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("error", ex.getReason() != null ? ex.getReason() : ex.getMessage());
+        body.put("status", ex.getStatusCode().value());
+        return ResponseEntity.status(ex.getStatusCode()).body(body);
+    }
+
     @ExceptionHandler({InvalidDataAccessApiUsageException.class, PropertyReferenceException.class})
     public ResponseEntity<Map<String, Object>> handleInvalidSort(Exception ex) {
         Map<String, Object> body = new HashMap<>();
@@ -58,6 +67,7 @@ public class ApiExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleGeneric(Exception ex) {
+        log.error("Unhandled exception [{}]: {}", ex.getClass().getName(), ex.getMessage(), ex);
         Map<String, Object> body = new HashMap<>();
         body.put("error", "internal_error");
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(body);

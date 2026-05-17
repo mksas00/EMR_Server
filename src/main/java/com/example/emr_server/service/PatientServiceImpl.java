@@ -12,6 +12,7 @@ import com.example.emr_server.repository.spec.PatientSpecifications;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -55,6 +56,7 @@ public class PatientServiceImpl implements PatientService {
                 p.getId(),
                 p.getFirstName(),
                 p.getLastName(),
+                p.getPesel(),
                 p.getDateOfBirth(),
                 p.getGender(),
                 p.getContactInfo(),
@@ -139,6 +141,7 @@ public class PatientServiceImpl implements PatientService {
 
     // Nowe metody DTO + autoryzacja
     @Override
+    @Transactional(readOnly = true)
     public List<PatientDto> getAllVisibleForCurrent() {
         User u = current();
         return patientRepository.findAll().stream()
@@ -148,6 +151,7 @@ public class PatientServiceImpl implements PatientService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Optional<PatientDto> getVisibleById(UUID id) {
         User u = current();
         return patientRepository.findById(id)
@@ -156,6 +160,7 @@ public class PatientServiceImpl implements PatientService {
     }
 
     @Override
+    @Transactional
     public PatientDto createForCurrent(Patient patient) {
         User u = current();
         if (u == null) throw new SecurityException("Brak autoryzacji");
@@ -163,12 +168,16 @@ public class PatientServiceImpl implements PatientService {
         if (!authorizationService.canWritePatient(u, patient)) {
             throw new SecurityException("Brak uprawnień do utworzenia pacjenta");
         }
-        Patient saved = patientRepository.save(patient);
+        // saveAndFlush wymusza natychmiastowy INSERT do tabeli patients zanim
+        // dopiszemy rekord do audit_log (który ma FK -> patients). Bez tego
+        // Hibernate może zmienić kolejność INSERT-ów przy commicie i FK się wywali.
+        Patient saved = patientRepository.saveAndFlush(patient);
         auditService.logPatient(u, saved, "CREATE_PATIENT", "Utworzono pacjenta id=" + saved.getId());
         return toDto(saved);
     }
 
     @Override
+    @Transactional
     public Optional<PatientDto> updateForCurrent(UUID id, Patient update) {
         User u = current();
         if (u == null) throw new SecurityException("Brak autoryzacji");
@@ -199,6 +208,7 @@ public class PatientServiceImpl implements PatientService {
     }
 
     @Override
+    @Transactional
     public boolean deleteForCurrent(UUID id) {
         User u = current();
         if (u == null) throw new SecurityException("Brak autoryzacji");
@@ -213,6 +223,20 @@ public class PatientServiceImpl implements PatientService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public Optional<UUID> findPatientIdByPesel(String pesel) {
+        if (pesel == null || pesel.isBlank()) return Optional.empty();
+        String trimmed = pesel.trim();
+        // Try plaintext first (data may not be encrypted)
+        Optional<Patient> byPlain = patientRepository.findByPesel(trimmed);
+        if (byPlain.isPresent()) return byPlain.map(Patient::getId);
+        // Fallback: encrypted lookup
+        String encPesel = encDet("patient.pesel", trimmed);
+        return patientRepository.findByPesel(encPesel).map(Patient::getId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public Page<PatientDto> searchVisible(
             java.util.Optional<String> firstName,
             java.util.Optional<String> lastName,
@@ -225,10 +249,11 @@ public class PatientServiceImpl implements PatientService {
             Pageable pageable
     ) {
         User u = current();
-        // encrypt deterministic fields to match DB
+        // encrypt deterministic fields to match DB (encrypted), but PESEL may be plain
         var encFirst = firstName.isPresent() ? java.util.Optional.ofNullable(encDet("patient.first_name", firstName.get())) : java.util.Optional.<String>empty();
         var encLast = lastName.isPresent() ? java.util.Optional.ofNullable(encDet("patient.last_name", lastName.get())) : java.util.Optional.<String>empty();
-        var encPes = pesel.isPresent() ? java.util.Optional.ofNullable(encDet("patient.pesel", pesel.get())) : java.util.Optional.<String>empty();
+        // PESEL search: try plaintext first (DB may store plain if migration hasn't run)
+        var encPes = pesel; // pass plaintext to spec; spec does exact match against DB
         var spec = PatientSpecifications.withFilters(encFirst, encLast, encPes, dobStart, dobEnd, gender, addressFragment, createdById);
         var all = patientRepository.findAll(spec);
         var visible = all.stream()

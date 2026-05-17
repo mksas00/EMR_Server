@@ -15,7 +15,8 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 
 @Aspect
 @Component
-@Order(Ordered.HIGHEST_PRECEDENCE)
+// LOWEST_PRECEDENCE ensures this runs INSIDE the TransactionInterceptor (which defaults to LOWEST_PRECEDENCE - 1 or similar).
+@Order(Ordered.LOWEST_PRECEDENCE)
 @RequiredArgsConstructor
 public class RlsContextAspect {
 

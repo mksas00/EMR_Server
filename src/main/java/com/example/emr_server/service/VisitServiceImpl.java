@@ -33,26 +33,39 @@ public class VisitServiceImpl implements VisitService {
     private final UserRepository userRepository;
     private final AuditService auditService;
     private final PatientRepository patientRepository;
+    private final PatientService patientService;
 
     public VisitServiceImpl(VisitRepository visitRepository,
                             AuthorizationService authorizationService,
                             UserRepository userRepository,
                             AuditService auditService,
-                            PatientRepository patientRepository) {
+                            PatientRepository patientRepository,
+                            PatientService patientService) {
         this.visitRepository = visitRepository;
         this.authorizationService = authorizationService;
         this.userRepository = userRepository;
         this.auditService = auditService;
         this.patientRepository = patientRepository;
+        this.patientService = patientService;
     }
 
     private User current() { return SecurityUtil.getCurrentUser(userRepository).orElse(null); }
 
     private VisitDto toDto(Visit v) {
+        Patient p = v.getPatient();
+        User d = v.getDoctor();
+        String patientFull = p != null
+                ? ((p.getFirstName() != null ? p.getFirstName() : "") + " " + (p.getLastName() != null ? p.getLastName() : "")).trim()
+                : null;
+        String doctorFull = d != null
+                ? ((d.getUsername() != null ? d.getUsername() : "")).trim()
+                : null;
         return new VisitDto(
                 v.getId(),
-                v.getPatient() != null ? v.getPatient().getId() : null,
-                v.getDoctor() != null ? v.getDoctor().getId() : null,
+                p != null ? p.getId() : null,
+                patientFull,
+                d != null ? d.getId() : null,
+                doctorFull,
                 v.getVisitDate(),
                 v.getEndDate(),
                 v.getVisitType(),
@@ -237,8 +250,10 @@ public class VisitServiceImpl implements VisitService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Page<VisitDto> searchVisible(
             java.util.Optional<java.util.UUID> patientId,
+            java.util.Optional<String> pesel,
             java.util.Optional<java.util.UUID> doctorId,
             java.util.Optional<java.time.Instant> start,
             java.util.Optional<java.time.Instant> end,
@@ -249,8 +264,16 @@ public class VisitServiceImpl implements VisitService {
             java.util.Optional<String> status,
             Pageable pageable
     ) {
+        // Resolve PESEL to patientId if provided
+        java.util.Optional<java.util.UUID> effectivePatientId = patientId;
+        if (pesel.isPresent() && !pesel.get().isBlank()) {
+            effectivePatientId = patientService.findPatientIdByPesel(pesel.get());
+            if (effectivePatientId.isEmpty()) {
+                return com.example.emr_server.util.PageUtils.paginate(java.util.List.of(), pageable);
+            }
+        }
         User u = current();
-        var spec = VisitSpecifications.withFilters(patientId, doctorId, start, end, type, diagnosis, reason, confidential, status);
+        var spec = VisitSpecifications.withFilters(effectivePatientId, doctorId, start, end, type, diagnosis, reason, confidential, status);
         var all = visitRepository.findAll(spec);
         var visible = all.stream()
                 .filter(v -> authorizationService.canReadPatient(u, v.getPatient()))

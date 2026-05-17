@@ -5,6 +5,7 @@ import com.example.emr_server.security.encryption.EncryptionEntityListener;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.UuidGenerator;
 
 import java.util.UUID;
 
@@ -15,6 +16,8 @@ import java.util.UUID;
 @Table(name = "allergies", schema = "emr")
 public class Allergy {
     @Id
+    @GeneratedValue
+    @UuidGenerator
     @Column(name = "id", nullable = false)
     private UUID id;
 

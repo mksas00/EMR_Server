@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS emr.users (
     password_algo varchar(30),
     CONSTRAINT users_username_uq UNIQUE (username),
     CONSTRAINT users_email_uq UNIQUE (email),
-    CONSTRAINT users_role_chk CHECK (role IN ('admin','doctor','nurse','lab_tech','receptionist'))
+    CONSTRAINT users_role_chk CHECK (role IN ('admin','doctor','nurse','lab_tech'))
 );
 
 -- PACJENCI

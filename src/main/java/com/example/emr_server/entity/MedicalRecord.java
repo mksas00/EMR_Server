@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.annotations.UuidGenerator;
 import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
@@ -17,7 +18,8 @@ import java.util.UUID;
 @Table(name = "medical_records", schema = "emr")
 public class MedicalRecord {
     @Id
-    @ColumnDefault("gen_random_uuid()")
+    @GeneratedValue
+    @UuidGenerator
     @Column(name = "id", nullable = false)
     private UUID id;
 

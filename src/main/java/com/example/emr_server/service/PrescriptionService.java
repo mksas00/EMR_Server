@@ -141,6 +141,7 @@ public interface PrescriptionService {
      */
     Page<PrescriptionDto> searchVisible(
             Optional<UUID> patientId,
+            Optional<String> pesel,
             Optional<UUID> doctorId,
             Optional<Boolean> active,
             Optional<LocalDate> start,

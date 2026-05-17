@@ -1,0 +1,10 @@
+version: '3.9'
+services:
+  app:
+    image: emr-app
+    ports:
+      - "8080:8080"
+    environment:
+      # Stały klucz szyfrowania dla lokalnego devu (32B Base64)
+      SECURITY_ENC_MASTER_KEY: SzJiTBTMCZ8QwcOyrlG1FhrTR26fTojjKA9IBj0twz4=
+      SECURITY_ENC_ACTIVE_KEY_ID: k1

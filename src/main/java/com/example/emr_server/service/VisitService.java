@@ -40,6 +40,7 @@ public interface VisitService {
     // Nowe: wyszukiwanie z filtrami (AND) + paginacja/sort
     Page<VisitDto> searchVisible(
             Optional<UUID> patientId,
+            Optional<String> pesel,
             Optional<UUID> doctorId,
             Optional<Instant> start,
             Optional<Instant> end,

@@ -16,6 +16,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.intercept.AuthorizationFilter;
+import org.springframework.security.web.authentication.AnonymousAuthenticationFilter;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 import com.example.emr_server.security.ratelimit.RateLimitFilter;
@@ -71,10 +72,12 @@ public class SecurityConfig {
             .authenticationProvider(daoAuthProvider(userDetailsService, passwordEncoder()))
             // Security filters in correct order
             .addFilterBefore(cookieSecurityFilter, UsernamePasswordAuthenticationFilter.class)
+            // JWT must run BEFORE AnonymousAuthenticationFilter so it can set proper auth
+            // (AnonymousAuthenticationFilter only sets anonymous if auth is null)
+            .addFilterBefore(jwtAuthenticationFilter, AnonymousAuthenticationFilter.class)
             .addFilterBefore(loggingMdcFilter(), AuthorizationFilter.class)
             .addFilterBefore(requestSizeLimitFilter, AuthorizationFilter.class)
             .addFilterBefore(rateLimitFilter, AuthorizationFilter.class)
-            .addFilterBefore(jwtAuthenticationFilter, AuthorizationFilter.class)
             .headers(h -> {
                 // Content Security Policy - ochrona przed XSS
                 h.contentSecurityPolicy(csp -> csp.policyDirectives(
@@ -151,7 +154,7 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration cfg = new CorsConfiguration();
         cfg.setAllowedOrigins(allowedOrigins);
-        cfg.setAllowedMethods(List.of("GET","POST","PUT","DELETE","OPTIONS"));
+        cfg.setAllowedMethods(List.of("GET","POST","PUT","PATCH","DELETE","OPTIONS"));
         cfg.setAllowedHeaders(List.of("Authorization","Content-Type","Accept","X-Requested-With"));
         cfg.setExposedHeaders(List.of("Content-Disposition"));
         cfg.setAllowCredentials(true);

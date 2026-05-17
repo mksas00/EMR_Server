@@ -23,22 +23,25 @@ public class AuditService {
         this.auditLogRepository = auditLogRepository;
     }
 
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    // Logowanie audytu działa w bieżącej transakcji (REQUIRED). REQUIRES_NEW powodowało
+    // naruszenie FK audit_log -> patients, ponieważ rekord pacjenta zapisany w transakcji
+    // wywołującej nie był jeszcze zacommitowany i nowa transakcja go nie widziała.
+    // W tej samej transakcji Hibernate poprawnie uporządkuje INSERT-y (najpierw patients,
+    // potem audit_log) i commit przebiega bez błędów.
+    @Transactional(propagation = Propagation.REQUIRED)
     public void logPatient(User user, Patient patient, String action, String description) {
-        try {
-            AuditLog log = new AuditLog();
-            log.setUser(user);
-            log.setPatient(patient);
-            log.setAction(action);
-            log.setDescription(description);
-            log.setTimestamp(Instant.now());
-            auditLogRepository.save(log);
-        } catch (Exception ignored) {
-            // celowo nie przerywamy głównej transakcji
-        }
+        AuditLog log = new AuditLog();
+        log.setUser(user);
+        log.setPatient(patient);
+        log.setAction(action);
+        log.setDescription(description);
+        log.setTimestamp(Instant.now());
+        auditLogRepository.save(log);
     }
 
-    // Nowe: ogólne logowanie bez powiązania z pacjentem
+    // Nowe: ogólne logowanie bez powiązania z pacjentem.
+    // Tu możemy bezpiecznie użyć REQUIRES_NEW + try/catch, bo brak FK do innych rekordów
+    // utworzonych w transakcji nadrzędnej -> audyt nie zerwie głównej transakcji.
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void log(User user, String action, String description) {
         try {

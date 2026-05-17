@@ -1,6 +1,8 @@
 package com.example.emr_server.security;
 
+import com.example.emr_server.entity.User;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.util.regex.Pattern;
 
@@ -11,6 +13,10 @@ import java.util.regex.Pattern;
 @Service
 @Slf4j
 public class InputValidationService {
+
+    // Wstrzyknięcie przez setter, żeby uniknąć cyklu (ten serwis jest używany przez wiele bean-ów).
+    @Autowired(required = false)
+    private SecurityIncidentService incidents;
 
     // Patterns for detecting potential SQL injection
     private static final Pattern SQL_INJECTION_PATTERN = Pattern.compile(
@@ -85,9 +91,23 @@ public class InputValidationService {
     }
 
     public void validateAndLog(String input, String context) {
-        if (!isSafeInput(input)) {
+        if (input == null) return;
+        boolean sql = containsSqlInjection(input);
+        boolean xss = containsXss(input);
+        if (sql || xss) {
             log.warn("Potentially malicious input detected in context: {} - Input: {}",
                     context, sanitizeForLog(input));
+            if (incidents != null) {
+                User cur = SecurityUtil.getCurrentUserPrincipal().orElse(null);
+                if (sql) {
+                    incidents.critical(SecurityIncidentService.Cat.SQL_INJECTION_DETECTED,
+                            "Wzorzec SQL injection (" + context + "): " + sanitizeForLog(input), cur);
+                }
+                if (xss) {
+                    incidents.high(SecurityIncidentService.Cat.XSS_DETECTED,
+                            "Wzorzec XSS (" + context + "): " + sanitizeForLog(input), cur);
+                }
+            }
             throw new SecurityException("Invalid input detected");
         }
     }

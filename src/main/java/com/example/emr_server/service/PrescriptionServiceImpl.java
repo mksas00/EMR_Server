@@ -1,6 +1,7 @@
 package com.example.emr_server.service;
 
 import com.example.emr_server.entity.Prescription;
+import com.example.emr_server.entity.Medication;
 import com.example.emr_server.entity.User;
 import com.example.emr_server.security.AuthorizationService;
 import com.example.emr_server.security.SecurityUtil;
@@ -13,6 +14,7 @@ import com.example.emr_server.repository.spec.PrescriptionSpecifications;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
@@ -28,23 +30,27 @@ public class PrescriptionServiceImpl implements PrescriptionService {
     private final AuthorizationService authorizationService;
     private final UserRepository userRepository;
     private final AuditService auditService;
+    private final PatientService patientService;
 
     public PrescriptionServiceImpl(PrescriptionRepository prescriptionRepository,
                                    AuthorizationService authorizationService,
                                    UserRepository userRepository,
-                                   AuditService auditService) {
+                                   AuditService auditService,
+                                   PatientService patientService) {
         this.prescriptionRepository = prescriptionRepository;
         this.authorizationService = authorizationService;
         this.userRepository = userRepository;
         this.auditService = auditService;
-    }
+        this.patientService = patientService;    }
 
     private User current() { return SecurityUtil.getCurrentUser(userRepository).orElse(null); }
 
     private PrescriptionItemDto toItemDto(PrescriptionMedication it) {
+        Medication med = it.getMedication();
         return new PrescriptionItemDto(
                 it.getId(),
-                it.getMedication()!=null? it.getMedication().getId(): null,
+                med != null ? med.getId() : null,
+                med != null ? med.getName() : null,
                 it.getDosageInfo(),
                 it.getQuantity(),
                 it.getUnit()
@@ -203,16 +209,25 @@ public class PrescriptionServiceImpl implements PrescriptionService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Page<PrescriptionDto> searchVisible(
             java.util.Optional<java.util.UUID> patientId,
+            java.util.Optional<String> pesel,
             java.util.Optional<java.util.UUID> doctorId,
             java.util.Optional<java.lang.Boolean> active,
             java.util.Optional<java.time.LocalDate> start,
             java.util.Optional<java.time.LocalDate> end,
             Pageable pageable
     ) {
+        java.util.Optional<java.util.UUID> effectivePatientId = patientId;
+        if (pesel.isPresent() && !pesel.get().isBlank()) {
+            effectivePatientId = patientService.findPatientIdByPesel(pesel.get());
+            if (effectivePatientId.isEmpty()) {
+                return com.example.emr_server.util.PageUtils.paginate(java.util.List.of(), pageable);
+            }
+        }
         User u = current();
-        var spec = PrescriptionSpecifications.withFilters(patientId, doctorId, active, start, end);
+        var spec = PrescriptionSpecifications.withFilters(effectivePatientId, doctorId, active, start, end);
         var all = prescriptionRepository.findAll(spec);
         var visible = all.stream()
                 .filter(p -> authorizationService.canReadPatient(u, p.getPatient()))

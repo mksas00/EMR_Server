@@ -6,6 +6,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.annotations.UuidGenerator;
 import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
@@ -20,8 +21,8 @@ import java.util.UUID;
 @Table(name = "patients", schema = "emr")
 public class Patient {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @ColumnDefault("gen_random_uuid()")
+    @GeneratedValue
+    @UuidGenerator
     @Column(name = "id", nullable = false)
     private UUID id;
 

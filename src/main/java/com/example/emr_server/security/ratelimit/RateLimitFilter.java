@@ -1,7 +1,7 @@
 package com.example.emr_server.security.ratelimit;
 
-import com.example.emr_server.entity.SecurityIncident;
-import com.example.emr_server.repository.SecurityIncidentRepository;
+import com.example.emr_server.security.LoginAttemptRecorder;
+import com.example.emr_server.security.SecurityIncidentService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ReadListener;
 import jakarta.servlet.ServletException;
@@ -18,9 +18,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.time.Instant;
 import java.util.Locale;
-import java.util.UUID;
 
 @Slf4j
 @Component
@@ -28,7 +26,8 @@ import java.util.UUID;
 public class RateLimitFilter extends OncePerRequestFilter {
 
     private final RateLimitService rateLimitService;
-    private final SecurityIncidentRepository incidentRepository;
+    private final SecurityIncidentService incidents;
+    private final LoginAttemptRecorder loginAttemptRecorder;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
@@ -57,6 +56,10 @@ public class RateLimitFilter extends OncePerRequestFilter {
             String ipBucket = isLogin ? "LOGIN_IP" : "PWD_RESET_IP";
             RateLimitService.RateCheck ipCheck = rateLimitService.tryConsume(ipBucket, ip);
             if (!ipCheck.allowed()) {
+                // Rate limit przekroczony – zapisz attempt (user=null) żeby detektor brute-force to widział
+                if (isLogin) {
+                    try { loginAttemptRecorder.record(null, false, ip, request.getHeader("User-Agent")); } catch (Exception ignore) {}
+                }
                 reject(response, ip, path, ipBucket, ipCheck.resetEpochSeconds());
                 return;
             }
@@ -90,18 +93,9 @@ public class RateLimitFilter extends OncePerRequestFilter {
 
     private void reject(HttpServletResponse response, String ip, String path, String bucket, long resetEpoch) throws IOException {
         log.warn("RATE_LIMIT_EXCEEDED ip={} path={} bucket={} resetEpoch={}", ip, path, bucket, resetEpoch);
-        try {
-            SecurityIncident si = new SecurityIncident();
-            si.setId(UUID.randomUUID());
-            si.setDetectedAt(Instant.now());
-            si.setSeverity("medium");
-            si.setCategory("RATE_LIMIT");
-            si.setDescription("Przekroczono limit: " + bucket + " na " + path + " z IP " + ip);
-            si.setStatus("open");
-            incidentRepository.save(si);
-        } catch (Exception e) {
-            log.debug("Nie udało się zapisać incydentu rate limiting: {}", e.getMessage());
-        }
+        incidents.medium(SecurityIncidentService.Cat.RATE_LIMIT,
+                "Przekroczono limit: " + bucket + " na " + path + " z IP " + ip,
+                null);
         response.setStatus(429);
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         long retryAfter = Math.max(0, resetEpoch - (System.currentTimeMillis()/1000L));

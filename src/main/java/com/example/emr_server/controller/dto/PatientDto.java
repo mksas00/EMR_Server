@@ -8,6 +8,7 @@ public record PatientDto(
         UUID id,
         String firstName,
         String lastName,
+        String pesel,
         LocalDate dateOfBirth,
         String gender,
         Map<String, Object> contactInfo,

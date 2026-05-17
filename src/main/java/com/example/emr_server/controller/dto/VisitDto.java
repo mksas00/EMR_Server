@@ -6,7 +6,9 @@ import java.util.UUID;
 public record VisitDto(
         UUID id,
         UUID patientId,
+        String patientFullName,
         UUID doctorId,
+        String doctorFullName,
         Instant visitDate,
         Instant endDate,
         String visitType,

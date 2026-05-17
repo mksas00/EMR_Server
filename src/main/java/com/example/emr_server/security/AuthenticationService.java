@@ -51,6 +51,8 @@ public class AuthenticationService {
     private final PasswordPolicyService passwordPolicyService;
     private final MfaService mfaService;
     private final PasswordResetTokenRepository passwordResetTokenRepository; // nowe
+    private final LoginAttemptRecorder loginAttemptRecorder;
+    private final SecurityIncidentService incidents;
 
     @Value("${security.jwt.refresh-ttl-days}")
     private long refreshTtlDays;
@@ -74,6 +76,8 @@ public class AuthenticationService {
         try {
             user = findUser(principal);
         } catch (ResponseStatusException ex) {
+            // Zapisz nieudaną próbę (user==null) – ważne dla statystyk top failing IPs
+            try { loginAttemptRecorder.record(null, false, ip, userAgent); } catch (Exception ignore) {}
             log.info("LOGIN_USER_NOT_FOUND principal='{}' ip={}", principal, ip);
             throw ex;
         }
@@ -91,7 +95,7 @@ public class AuthenticationService {
             }
         }
         boolean pwdOk = passwordEncoder.matches(req.getPassword(), storedHash);
-        recordAttempt(user, pwdOk, ip, principal);
+        loginAttemptRecorder.record(user, pwdOk, ip, userAgent);
         if (!pwdOk) {
             createAudit(user, "LOGIN_FAILURE", "Nieudane logowanie (hasło)");
             applyLockPolicy(user);
@@ -295,6 +299,8 @@ public class AuthenticationService {
         long recent = passwordResetTokenRepository.countByUserAndCreatedAtAfter(user, Instant.now().minus(15, ChronoUnit.MINUTES));
         if (recent >= 3) {
             createAudit(user, "PASSWORD_RESET_REQUEST_BLOCKED", "Przekroczono limit żądań resetu");
+            incidents.high(SecurityIncidentService.Cat.PASSWORD_RESET_ABUSE,
+                    "Wielokrotne żądania resetu hasła (" + (recent + 1) + ") z IP " + ip, user);
             return;
         }
         byte[] raw = new byte[32];
@@ -371,42 +377,33 @@ public class AuthenticationService {
     }
 
     private void recordAttempt(User user, boolean success, String ip, String userNameOrEmail) {
-        UserLoginAttempt attempt = new UserLoginAttempt();
-        attempt.setId(UUID.randomUUID());
-        attempt.setUser(user);
-        attempt.setSuccess(success);
-        attempt.setIp(ip);
-        attempt.setUserAgent("api");
-        attempt.setTimestamp(Instant.now());
-        attemptRepository.save(attempt);
-        if (!success) {
-            int fails = (user.getFailedLoginAttempts() == null ? 0 : user.getFailedLoginAttempts()) + 1;
-            user.setFailedLoginAttempts(fails);
-            userRepository.save(user);
-        }
+        // Deprecated – kept only for backward compatibility; use loginAttemptRecorder.record(...)
+        loginAttemptRecorder.record(user, success, ip, "api");
     }
 
     private void applyLockPolicy(User user) {
         Instant windowStart = Instant.now().minus(authProps.getWindowMinutes(), ChronoUnit.MINUTES);
         long recentFails = attemptRepository.countByUserAndSuccessIsFalseAndTimestampAfter(user, windowStart);
+        boolean isAdmin = "admin".equalsIgnoreCase(user.getRole());
         if (recentFails >= authProps.getMaxFailed()) {
-            user.setAccountLocked(true);
-            userRepository.save(user);
-            createIncident(user, "high", "ACCOUNT_LOCK", "Zablokowano po " + recentFails + " nieudanych próbach w oknie");
-            createAudit(user, "ACCOUNT_LOCK", "Konto zablokowane po nieudanych logowaniach");
+            if (isAdmin) {
+                // Kont administratora NIE blokujemy automatycznie – incydent critical zamiast locka
+                createIncident(user, "critical", SecurityIncidentService.Cat.ACCOUNT_LOCK,
+                        "Próba zablokowania konta ADMIN pominięta – " + recentFails + " failów. Wymagana ręczna weryfikacja!");
+                createAudit(user, "ACCOUNT_LOCK_SKIPPED_ADMIN", "Konto admina nie zostało zablokowane – wymaga ręcznej weryfikacji");
+            } else {
+                user.setAccountLocked(true);
+                userRepository.save(user);
+                createIncident(user, "high", SecurityIncidentService.Cat.ACCOUNT_LOCK,
+                        "Zablokowano po " + recentFails + " nieudanych próbach w oknie");
+                createAudit(user, "ACCOUNT_LOCK", "Konto zablokowane po nieudanych logowaniach");
+            }
         }
     }
 
     private void createIncident(User user, String severity, String category, String description) {
-        SecurityIncident si = new SecurityIncident();
-        si.setId(UUID.randomUUID());
-        si.setDetectedAt(Instant.now());
-        si.setSeverity(severity);
-        si.setCategory(category);
-        si.setDescription(description);
-        si.setUser(user);
-        si.setStatus("open");
-        securityIncidentRepository.save(si);
+        // Delegacja do centralnego serwisu (REQUIRES_NEW).
+        incidents.raise(severity, category, description, user);
     }
 
     private void createAudit(User user, String action, String description) {
@@ -425,6 +422,8 @@ public class AuthenticationService {
         userRepository.save(user);
     }
 
+    private static final int MAX_ACTIVE_SESSIONS = 5;
+
     private AuthResponse issueTokens(User user, String ip, String userAgent) {
         String access = jwtService.generateAccessToken(user.getId(), user.getUsername(), user.getRole());
         String refreshRaw = UUID.randomUUID().toString();
@@ -442,6 +441,18 @@ public class AuthenticationService {
             session.setUserAgent(ua);
         }
         sessionRepository.save(session);
+        // Enforce max active sessions limit – revoke oldest sessions beyond the limit
+        java.util.List<UserSession> activeSessions =
+                sessionRepository.findByUserAndRevokedAtIsNullAndExpiresAtAfterOrderByExpiresAtDesc(user, now);
+        if (activeSessions.size() > MAX_ACTIVE_SESSIONS) {
+            activeSessions.stream()
+                    .skip(MAX_ACTIVE_SESSIONS)
+                    .forEach(old -> {
+                        old.setRevokedAt(now);
+                        sessionRepository.save(old);
+                        log.info("SESSION_LIMIT_REVOKE user={} sessionId={}", user.getUsername(), old.getId());
+                    });
+        }
         return AuthResponse.builder()
                 .accessToken(access)
                 .refreshToken(refreshRaw)

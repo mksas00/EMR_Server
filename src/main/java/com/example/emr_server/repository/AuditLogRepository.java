@@ -1,7 +1,9 @@
 package com.example.emr_server.repository;
 
 import com.example.emr_server.entity.AuditLog;
+import com.example.emr_server.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
@@ -9,7 +11,7 @@ import java.util.List;
 import java.util.UUID;
 
 @Repository
-public interface AuditLogRepository extends JpaRepository<AuditLog, Integer> {
+public interface AuditLogRepository extends JpaRepository<AuditLog, Integer>, JpaSpecificationExecutor<AuditLog> {
 
     /**
      * Pobiera listę zapisów dziennika audytu dla danego użytkownika.
@@ -51,4 +53,6 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, Integer> {
      * @return lista zapisów, które zawierają fragment w opisie
      */
     List<AuditLog> findByDescriptionContaining(String descriptionFragment);
+
+    long countByUserAndActionAndTimestampAfter(User user, String action, Instant after);
 }

@@ -2,13 +2,14 @@ package com.example.emr_server.repository;
 
 import com.example.emr_server.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
 import java.util.UUID;
 
 @Repository
-public interface UserRepository extends JpaRepository<User, UUID> {
+public interface UserRepository extends JpaRepository<User, UUID>, JpaSpecificationExecutor<User> {
 
     /**
      * Pobiera użytkownika na podstawie adresu e-mail.
@@ -50,4 +51,11 @@ public interface UserRepository extends JpaRepository<User, UUID> {
      * @return obiekt użytkownika, jeśli istnieje
      */
     Optional<User> findByUsernameOrEmail(String username, String email);
+
+    /**
+     * Zlicza zablokowane konta użytkowników.
+     *
+     * @return liczba zablokowanych kont
+     */
+    long countByAccountLockedTrue();
 }

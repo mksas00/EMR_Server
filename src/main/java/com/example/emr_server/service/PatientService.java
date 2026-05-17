@@ -172,4 +172,12 @@ public interface PatientService {
             Optional<UUID> createdById,
             Pageable pageable
     );
+
+    /**
+     * Resolves PESEL to patient UUID. PESEL is encrypted deterministically in the DB.
+     *
+     * @param pesel plain PESEL string
+     * @return Optional with patient UUID if found
+     */
+    Optional<UUID> findPatientIdByPesel(String pesel);
 }

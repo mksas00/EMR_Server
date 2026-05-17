@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.annotations.UuidGenerator;
 import org.hibernate.type.SqlTypes;
 import com.example.emr_server.security.encryption.Encrypted;
 import com.example.emr_server.security.encryption.EncryptionEntityListener;
@@ -20,6 +21,8 @@ import java.util.UUID;
 public class User {
 
     @Id
+    @GeneratedValue
+    @UuidGenerator
     @Column(name = "id", nullable = false)
     private UUID id;
 
@@ -65,5 +68,20 @@ public class User {
 
     @Column(name = "mfa_enabled")
     private Boolean mfaEnabled;
+
+    @Encrypted(mode = Encrypted.Mode.DETERMINISTIC, value = "user.first_name")
+    @Column(name = "first_name", length = 200)
+    private String firstName;
+
+    @Encrypted(mode = Encrypted.Mode.DETERMINISTIC, value = "user.last_name")
+    @Column(name = "last_name", length = 200)
+    private String lastName;
+
+    /** Numer prawa wykonywania zawodu (PWZ) – dotyczy lekarzy/pielęgniarek */
+    @Column(name = "license_number", length = 20)
+    private String licenseNumber;
+
+    @Column(name = "specialization", length = 100)
+    private String specialization;
 }
 

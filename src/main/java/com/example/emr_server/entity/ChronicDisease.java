@@ -5,7 +5,7 @@ import com.example.emr_server.security.encryption.EncryptionEntityListener;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
-import org.hibernate.annotations.ColumnDefault;
+import org.hibernate.annotations.UuidGenerator;
 
 import java.time.LocalDate;
 import java.util.UUID;
@@ -17,7 +17,8 @@ import java.util.UUID;
 @Table(name = "chronic_diseases", schema = "emr")
 public class ChronicDisease {
     @Id
-    @ColumnDefault("gen_random_uuid()")
+    @GeneratedValue
+    @UuidGenerator
     @Column(name = "id", nullable = false)
     private UUID id;
 

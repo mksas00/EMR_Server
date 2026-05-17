@@ -15,6 +15,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
@@ -55,6 +56,7 @@ public class MedicalRecordController {
     }
 
     @PostMapping
+    @PreAuthorize("hasRole('DOCTOR')")
     @Operation(summary = "Utwórz rekord medyczny", description = "Tworzy rekord na podstawie MedicalRecordCreateRequest")
     public ResponseEntity<MedicalRecordDto> create(@Valid @RequestBody MedicalRecordCreateRequest req) {
         try {
@@ -74,6 +76,7 @@ public class MedicalRecordController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('DOCTOR')")
     @Operation(summary = "Aktualizuj rekord medyczny", description = "Aktualizuje rekord na podstawie MedicalRecordUpdateRequest")
     public ResponseEntity<MedicalRecordDto> update(@PathVariable UUID id, @Valid @RequestBody MedicalRecordUpdateRequest req) {
         try {
@@ -91,6 +94,7 @@ public class MedicalRecordController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('DOCTOR')")
     public ResponseEntity<Void> delete(@PathVariable UUID id) {
         try {
             boolean deleted = medicalRecordService.deleteForCurrent(id);

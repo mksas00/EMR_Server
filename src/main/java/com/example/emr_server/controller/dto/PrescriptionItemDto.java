@@ -5,6 +5,7 @@ import java.util.UUID;
 public record PrescriptionItemDto(
         UUID id,
         UUID medicationId,
+        String medicationName,
         String dosageInfo,
         Integer quantity,
         String unit
