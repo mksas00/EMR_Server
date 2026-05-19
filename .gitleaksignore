@@ -1,0 +1,5 @@
+# Historyczny wyciek developerskiego klucza w docker-compose.override.yml.
+# Klucz został wycofany i rotowany; nowe wartości pochodzą z lokalnego .env (gitignored).
+# Format wpisu: <commit>:<plik>:<rule>:<linia>
+b3364aa99ff21b5e8c5a052f16b4b75fbf562b01:docker-compose.override.yml:generic-api-key:9
+

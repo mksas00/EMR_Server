@@ -27,7 +27,7 @@ jobs:
           tags: emr:${{ github.sha }}
 
       - name: Trivy scan (image)
-        uses: aquasecurity/trivy-action@0.24.0
+        uses: aquasecurity/trivy-action@0.28.0
         with:
           image-ref: 'emr:${{ github.sha }}'
           format: 'sarif'
@@ -35,9 +35,15 @@ jobs:
           ignore-unfixed: true
           vuln-type: 'os,library'
           severity: 'CRITICAL,HIGH,MEDIUM'
+        env:
+          # Aktualne registry baz danych Trivy (od v0.52 trzymane w ghcr.io)
+          TRIVY_DB_REPOSITORY: ghcr.io/aquasecurity/trivy-db
+          TRIVY_JAVA_DB_REPOSITORY: ghcr.io/aquasecurity/trivy-java-db
 
       - name: Upload SARIF
+        if: always() && hashFiles('trivy-image.sarif') != ''
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: trivy-image.sarif
+          category: trivy-image
 
