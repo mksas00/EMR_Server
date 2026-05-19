@@ -48,7 +48,7 @@ jobs:
           if-no-files-found: warn
 
       - name: Trivy FS scan (repo + target)
-        uses: aquasecurity/trivy-action@0.24.0
+        uses: aquasecurity/trivy-action@0.28.0
         with:
           scan-type: 'fs'
           scan-ref: '.'
@@ -57,11 +57,16 @@ jobs:
           ignore-unfixed: true
           vuln-type: 'library'
           severity: 'CRITICAL,HIGH,MEDIUM'
+        env:
+          TRIVY_DB_REPOSITORY: ghcr.io/aquasecurity/trivy-db
+          TRIVY_JAVA_DB_REPOSITORY: ghcr.io/aquasecurity/trivy-java-db
 
       - name: Upload Trivy SARIF
+        if: always() && hashFiles('trivy-results.sarif') != ''
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: trivy-results.sarif
+          category: trivy-fs
 
       - name: Upload test reports
         if: always()
