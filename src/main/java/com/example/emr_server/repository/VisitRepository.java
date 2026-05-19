@@ -31,11 +31,10 @@ public interface VisitRepository extends JpaRepository<Visit, UUID>, JpaSpecific
     // Wyszukiwanie pierwszej wizyty pacjenta po dacie wizyty (pierwsza najwcześniejsza wizyta)
     Optional<Visit> findFirstByPatient_IdOrderByVisitDateAsc(UUID patientId);
 
-    // Wyszukiwanie wszystkich wizyt danego lekarza po diagnozie
-    List<Visit> findByDoctor_IdAndDiagnosisContaining(UUID doctorId, String diagnosisKeyword);
-
-    // Wyszukiwanie wizyt z powodów zawierających konkretny ciąg znaków (np. wyszukiwanie powodów wizyt)
-    List<Visit> findByReasonContainingIgnoreCase(String reason);
+    // UWAGA: usunięto findByDoctor_IdAndDiagnosisContaining oraz findByReasonContainingIgnoreCase –
+    // pola diagnosis/reason są zaszyfrowane deterministycznie (@Encrypted), więc LIKE/UPPER po
+    // szyfrogramie nie zwracają sensownych wyników. Dodatkowo Hibernate 6 + H2 mapuje
+    // length=Integer.MAX_VALUE na CLOB, na którym UPPER() jest niedozwolony.
 
     @Query("select v from Visit v where v.doctor.id = :doctorId and (v.status is null or v.status <> :excluded) and v.visitDate < :end and (v.endDate is null or v.endDate > :start)")
     List<Visit> findOverlapping(@Param("doctorId") UUID doctorId,

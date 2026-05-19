@@ -61,11 +61,12 @@ class BtgSecurityTest {
         UUID patientId = UUID.randomUUID();
         BtgGrantRequest request = new BtgGrantRequest(patientId, 60, "Emergency access");
 
-        // When & Then: access denied with 403 (Spring Security default for unauthenticated)
+        // When & Then: access denied with 401 Unauthorized (stateless REST semantics:
+        // missing/invalid credentials -> 401, missing privileges on authenticated user -> 403).
         mockMvc.perform(post("/api/btg/grant")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
-            .andExpect(status().isForbidden());
+            .andExpect(status().isUnauthorized());
     }
 
     @Test

@@ -36,6 +36,7 @@ public class LabResultController {
     @GetMapping
     public ResponseEntity<Page<LabResultDto>> list(
             @RequestParam Optional<UUID> patientId,
+            @RequestParam Optional<String> pesel,
             @RequestParam Optional<UUID> orderedById,
             @RequestParam Optional<String> status,
             @RequestParam Optional<LocalDate> start,
@@ -45,7 +46,7 @@ public class LabResultController {
             Pageable pageable
     ) {
         Page<LabResultDto> page = labResultService.searchVisible(
-                patientId, orderedById, status, start, end, testName, resultFragment, pageable
+                patientId, pesel, orderedById, status, start, end, testName, resultFragment, pageable
         );
         return ResponseEntity.ok(page);
     }

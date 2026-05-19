@@ -6,6 +6,7 @@ import com.example.emr_server.entity.User;
 import com.example.emr_server.repository.PatientConsentRepository;
 import com.example.emr_server.repository.PatientRepository;
 import com.example.emr_server.security.CustomUserDetails;
+import com.example.emr_server.security.SecurityIncidentService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -25,6 +26,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -47,6 +49,9 @@ class BtgServiceImplTest {
 
     @Mock
     private CustomUserDetails customUserDetails;
+
+    @Mock
+    private SecurityIncidentService incidents;
 
     @InjectMocks
     private BtgServiceImpl btgService;
@@ -112,6 +117,7 @@ class BtgServiceImplTest {
         assertThat(capturedConsent.getExpiresAt()).isAfter(Instant.now());
         assertThat(capturedConsent.getExpiresAt()).isBefore(Instant.now().plus(minutes + 1, ChronoUnit.MINUTES));
 
+        verify(patientConsentRepository).countByGrantedToAndScopeAndGrantedAtAfter(eq(currentUser), eq("btg"), any(Instant.class));
         verifyNoMoreInteractions(patientRepository, patientConsentRepository);
     }
 
@@ -152,6 +158,7 @@ class BtgServiceImplTest {
         assertThat(result.getExpiresAt()).isBefore(Instant.now().plus(2, ChronoUnit.MINUTES));
 
         verify(patientConsentRepository).save(any(PatientConsent.class));
+        verify(patientConsentRepository).countByGrantedToAndScopeAndGrantedAtAfter(eq(currentUser), eq("btg"), any(Instant.class));
         verifyNoMoreInteractions(patientRepository, patientConsentRepository);
     }
 
@@ -192,6 +199,7 @@ class BtgServiceImplTest {
         assertThat(result.getExpiresAt()).isBefore(Instant.now().plus(121, ChronoUnit.MINUTES));
 
         verify(patientConsentRepository).save(any(PatientConsent.class));
+        verify(patientConsentRepository).countByGrantedToAndScopeAndGrantedAtAfter(eq(currentUser), eq("btg"), any(Instant.class));
         verifyNoMoreInteractions(patientRepository, patientConsentRepository);
     }
 

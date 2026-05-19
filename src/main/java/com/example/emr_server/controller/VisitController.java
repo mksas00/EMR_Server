@@ -36,6 +36,7 @@ public class VisitController {
     @GetMapping
     public ResponseEntity<Page<VisitDto>> getAllVisits(
             @RequestParam Optional<java.util.UUID> patientId,
+            @RequestParam Optional<String> pesel,
             @RequestParam Optional<java.util.UUID> doctorId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Optional<java.time.Instant> start,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) Optional<java.time.Instant> end,
@@ -47,7 +48,7 @@ public class VisitController {
             Pageable pageable
     ) {
         Page<VisitDto> page = visitService.searchVisible(
-                patientId, doctorId, start, end, type, diagnosis, reason, confidential, status, pageable
+                patientId, pesel, doctorId, start, end, type, diagnosis, reason, confidential, status, pageable
         );
         return ResponseEntity.ok(page);
     }

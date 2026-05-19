@@ -69,6 +69,15 @@ public class SecurityConfig {
                 ).permitAll()
                 .anyRequest().authenticated()
             )
+            // Stateless REST: brak auth = 401 Unauthorized (a nie domyślne 403 Forbidden ze Spring Security),
+            // brak uprawnień przy zalogowanym użytkowniku nadal daje 403 (obsługiwane przez accessDeniedHandler default).
+            .exceptionHandling(eh -> eh
+                .authenticationEntryPoint((request, response, authException) -> {
+                    response.setStatus(jakarta.servlet.http.HttpServletResponse.SC_UNAUTHORIZED);
+                    response.setContentType("application/json");
+                    response.getWriter().write("{\"error\":\"Unauthorized\"}");
+                })
+            )
             .authenticationProvider(daoAuthProvider(userDetailsService, passwordEncoder()))
             // Security filters in correct order
             .addFilterBefore(cookieSecurityFilter, UsernamePasswordAuthenticationFilter.class)
